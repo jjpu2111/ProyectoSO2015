@@ -1,3 +1,9 @@
+#ifndef PRINCIPAL_H
+#define PRINCIPAL_H
+
+/* NOTA 
+
+Prioridades: 0 - 5 
 IDmodulo: 0 - 6
 
 IDmodulo 0 = Tarjeta de red
