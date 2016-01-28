@@ -24,8 +24,6 @@ typedef struct
 }Tarjeta_Red;	///Los semaforos ueden colocarse de forma global...///
 
 int Prioridad_Proceso(pthread_t Hilo);
-void Cierre_Envio_Recepcion_Tarjeta_Red(Tarjeta_Red *TR);
-void Habilitacion_Envio_Recepcion_Tarjeta_Red(Tarjeta_Red *TR);
 void Insertar_Peticion_Buffer(int *Buffer);
 void Envio_Peticion(int *Buffer);
 void *Eliminar_Peticion_Buffer(int *Buffer);
@@ -45,23 +43,12 @@ int main()
 	sem_init(&TR.Bloqueado, 0, 1);
 	sem_init(&TR.In, 0, 1);
 	sem_init(&TR.Out, 0, 1);
-	//sem_wait(&TR.Bloqueado);
-	//sem_wait(&TR.In);
-	//sem_wait(&TR.Out);
+	sem_wait(&TR.Bloqueado);
+	sem_wait(&TR.In);
+	sem_wait(&TR.Out);
 	Solicitar_Tarjeta_Red(&TR);
 	
 	return 0;
-}
-
-//	Cuando ocurre una IRQ6...	esto deberia se manejado por el modulo de interrupciones creo //
-void Cierre_Envio_Recepcion_Tarjeta_Red(Tarjeta_Red *TR)
-{
-	sem_wait(&TR->Bloqueado);// deberia estar ser el nuevo semaforo
-}
-
-void Habilitacion_Envio_Recepcion_Tarjeta_Red(Tarjeta_Red *TR)
-{
-	sem_post(&TR->Bloqueado);
 }
 
 void Insertar_Peticion_Buffer(int *Buffer)
