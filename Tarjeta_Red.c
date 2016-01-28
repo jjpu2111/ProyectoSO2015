@@ -1,5 +1,5 @@
-#include <stdio.h>		///Falta mejorar la Sincronizacion y Señalizacion...///
 /**Tarjeta de Red**/
+#include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
 #include <semaphore.h>
@@ -45,9 +45,9 @@ int main()
 	sem_init(&TR.Bloqueado, 0, 1);
 	sem_init(&TR.In, 0, 1);
 	sem_init(&TR.Out, 0, 1);
-	sem_wait(&TR.Bloqueado);
-	sem_wait(&TR.In);
-	sem_wait(&TR.Out);
+	//sem_wait(&TR.Bloqueado);
+	//sem_wait(&TR.In);
+	//sem_wait(&TR.Out);
 	Solicitar_Tarjeta_Red(&TR);
 	
 	return 0;
