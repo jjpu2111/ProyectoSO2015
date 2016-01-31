@@ -148,10 +148,7 @@ tds* allocate_memory(int request)
         //fin llenado
 
         for(j=i; j>=start; j--)
-        {
-            bitmap[j]=1;//llena el mapa de bits
-            memory[j]=1;//llena la memoria
-        }
+             memory[j]=bitmap[j]=1;//llena el mapa de bits y memoria
     }
     else
         tdsProcess=NULL;//retorna null si no hay espacio
