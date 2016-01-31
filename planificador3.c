@@ -37,7 +37,7 @@ typedef struct
 } PCB;
 
 /* Procedimientos */
-void *proceso_prueba(PCB *p);
+void *proceso_en_ejecucion(PCB *p);
 void creador_procesos(pthread_t procesos[], PCB pcb_procesos[]);
 void ordenamiento_por_prioridad(PCB pcb_procesos[]);
 
@@ -82,12 +82,12 @@ int main()
 	return 0;
 }
 
-void *proceso_prueba(PCB *p)
+void *proceso_en_ejecucion(PCB *p)
 {
 	sem_wait (&sem_procesos[p->numero_proceso]);
-	printf("\e[1m\e[94m AVISO: Entre al proceso %d para su ejecucion\n", p->numero_proceso);
+	printf("\e[1m\e[94m AVISO: Entra al proceso %d para su ejecucion\n", p->numero_proceso);
 	printf("\e[93m\e[1m Prioridad del proceso %d es %d \n", p->numero_proceso, p->prioridad);
-
+	system("sleep 3.0");
 }
 
 void creador_procesos(pthread_t procesos[], PCB pcb_procesos[])
@@ -100,10 +100,13 @@ void creador_procesos(pthread_t procesos[], PCB pcb_procesos[])
 		pcb_procesos[i].prioridad = rand()%6;
 
 		sem_wait(&sem_procesos[i]);
-		if(pthread_create(&procesos[i], NULL, (void *) &proceso_prueba, (void *) &pcb_procesos[i] ))
+		if(pthread_create(&procesos[i], NULL, (void *) &proceso_en_ejecucion, (void *) &pcb_procesos[i] ))
 			printf("\e[1m\e[91m ERROR: Creacion del hilo %d invalido\n", i);
 		else	
+		{	
 			printf("\e[1m\e[94m AVISO: Proceso %d creado exitosamente\n", i);
+			system("sleep 1.0");
+		}
 	}
 }
 
