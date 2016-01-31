@@ -148,10 +148,7 @@ tds* allocate_memory(int request)
         //fin llenado
 
         for(j=i; j>=start; j--)
-        {
-            bitmap[j]=1;//llena el mapa de bits
-            memory[j]=1;//llena la memoria
-        }
+            memory[j]=bitmap[j]=1;//llena el mapa de bits y la memoria
     }
     else
         tdsProcess=NULL;//retorna null si no hay espacio
@@ -169,8 +166,8 @@ int mmu(int pid, int nSegment, int displacement)
 	{
 		if(pcbProcess[pid].tdsProcess->limit > displacement && displacement >=0) //comprueba los limites del segmento
 			physical_address=pcbProcess[pid].tdsProcess->base + displacement; //base + desplazamiento
-        else
-             physical_address=ERROR;//interrupcion al monitor del sistema, error de direccionamiento
+		else
+             		physical_address=ERROR;//interrupcion al monitor del sistema, error de direccionamiento
 	}
 	else
         physical_address=ERROR;//interrupcion al monitor del sistema, error de direccionamiento
