@@ -2,15 +2,18 @@
 NOTA 
 
 Prioridades: 0 - 5 
-ID_modulo: 0 - 6
+id_modulo: 0 - 6
 
-ID_modulo 0 = Tarjeta de red
-ID_modulo 1 = Servidor de impresion
-ID_modulo 2 = Demonio de compactacion
-ID_modulo 3 = Antivirus y Firewall
-ID_modulo 4 = Procesos que soliciten CPU
-ID_modulo 5 = Procesos que soliciten espacio en disco
-ID_modulo 6 = Procesos que envien y soliciten datos a traves de la tarjeta de red;
+id_modulo 0 = Tarjeta de red
+id_modulo 1 = Servidor de impresion
+id_modulo 2 = Demonio de compactacion
+id_modulo 3 = Antivirus y Firewall
+id_modulo 4 = Procesos que soliciten CPU
+id_modulo 5 = Procesos que soliciten espacio en disco
+id_modulo 6 = Procesos que envien y soliciten datos a traves de la tarjeta de red;
+
+Los modulos del 0 - 3 tienen prioridad 0
+Los modulos del 4 - 6 tienen prioridad 1 - 5
 */  
 
 /* POLITICA DE PRIORIDADES SIN DESALOJO */
@@ -23,7 +26,7 @@ ID_modulo 6 = Procesos que envien y soliciten datos a traves de la tarjeta de re
 #include <stdlib.h>
 
 /* Define */
-#define N 4
+#define N 10
 
 /* Declaracion de semaforos */
 sem_t mutex, sem_procesos[N], mutex2;
@@ -34,6 +37,7 @@ typedef struct
 	int id_proceso;
 	int numero_proceso;
 	int prioridad;
+	int id_modulo;
 } PCB;
 
 /* Procedimientos */
@@ -87,6 +91,7 @@ void *proceso_en_ejecucion(PCB *p)
 	sem_wait (&sem_procesos[p->numero_proceso]);
 	printf("\e[1m\e[94m AVISO: Entra al proceso %d para su ejecucion\n", p->numero_proceso);
 	printf("\e[93m\e[1m Prioridad del proceso %d es %d \n", p->numero_proceso, p->prioridad);
+	printf("\e[93m\e[1m ID del proceso %d es %d \n", p->numero_proceso, p->id_modulo);
 	system("sleep 3.0");
 }
 
@@ -97,7 +102,12 @@ void creador_procesos(pthread_t procesos[], PCB pcb_procesos[])
 	for(i = 0; i < N; i++)
 	{
 		pcb_procesos[i].numero_proceso = i;
-		pcb_procesos[i].prioridad = rand()%6;
+		pcb_procesos[i].prioridad = rand() % 6; /* Prioridad va de 0 - 5 */
+		
+		if(pcb_procesos[i].prioridad == 0)
+			pcb_procesos[i].id_modulo = rand() % 3; /* id_modulo va de 0 - 3 */
+		else
+			pcb_procesos[i].id_modulo = 4 + rand() % 3; /* id_modulo va de 4 - 6 */					
 
 		sem_wait(&sem_procesos[i]);
 		if(pthread_create(&procesos[i], NULL, (void *) &proceso_en_ejecucion, (void *) &pcb_procesos[i] ))
