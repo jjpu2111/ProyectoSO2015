@@ -109,7 +109,7 @@ int main()
 	return 0;
 }
 
-/* ------------------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------------------------------- */
 
 void *proceso_en_ejecucion(PCB *p)
 {
@@ -186,7 +186,7 @@ void ordenamiento_por_prioridad(PCB pcb_procesos[N])
 	}
 }
 
-/* --------------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------------------------------- */
 
 void Insertar_Peticion_Buffer(int *Buffer)
 {
@@ -202,13 +202,15 @@ void Envio_Peticion(int *Buffer)
 		printf("\nPaquete Guardado en el Buffer...\n");
 		system("sleep 1.0");
 		Insertar_Peticion_Buffer(Buffer);
-	}else{
+	}
+	else
+	{
 		printf("\nBuffer LLeno...\n");
 		system("sleep 2.0");
 	}
 }
 
-void *Eliminar_Peticion_Buffer(int *Buffer) // Parametro *Buffer
+void *Eliminar_Peticion_Buffer(int *Buffer) /* Parametro *Buffer */
 {
 	if(*Buffer > 0)
 	{
@@ -218,7 +220,7 @@ void *Eliminar_Peticion_Buffer(int *Buffer) // Parametro *Buffer
 	}
 }
 
-void Liberar_Buffer(int *Buffer) // Parametro *Buffer
+void Liberar_Buffer(int *Buffer) /* Parametro *Buffer */
 {
 	*Buffer = (*Buffer - 1);
 	printf("\nPaquete enviado...\n");
@@ -229,9 +231,12 @@ void Liberar_Buffer(int *Buffer) // Parametro *Buffer
 void Solicitar_Tarjeta_Red(Tarjeta_Red *TR)
 {
 	int Valor;
-	if((sem_getvalue(&TR->Bloqueado, &Valor) == 0) AND (Valor == 1))	//Si el firewall no esta bloqueado puedo recibir y enviar de una vez...//
+
+	/* Si el firewall no esta bloqueado puedo recibir y enviar de una vez... */
+	if((sem_getvalue(&TR->Bloqueado, &Valor) == 0) AND (Valor == 1))	
 	{
-		if((sem_getvalue(&TR->In, &Valor) == 0) AND (Valor == 0))	///Si valor es igual 0, entonces esa es la señal de que es un paquete de entrada.///
+		/* Si valor es igual 0, entonces esa es la señal de que es un paquete de entrada. */
+		if((sem_getvalue(&TR->In, &Valor) == 0) AND (Valor == 0))	
 		{
 			printf("\n\t*Paquete de Entrada*\n");
 			system("sleep 1.0");
@@ -243,7 +248,9 @@ void Solicitar_Tarjeta_Red(Tarjeta_Red *TR)
 			system("sleep 1.0");
 			sem_post(&TR->In);
 		}
-		if((sem_getvalue(&TR->Out, &Valor) == 0) AND (Valor == 0))	///Si valor es igual 0, entonces esa es la señal de que es un paquete de salida.///
+
+		/* Si valor es igual 0, entonces esa es la señal de que es un paquete de salida. */
+		if((sem_getvalue(&TR->Out, &Valor) == 0) AND (Valor == 0))	
 		{
 			printf("\n\t*Paquete de Salida*\n");
 			system("sleep 1.0");
@@ -255,8 +262,12 @@ void Solicitar_Tarjeta_Red(Tarjeta_Red *TR)
 			system("sleep 1.0");
 			sem_post(&TR->Out);
 		}
-	}else{
-		printf("\nFirewall Bloqueo el Envio y Recepcion de Datos...\n");	///En este caso el Firewall bloqueo la tarjeta de Red, pero el igual puede recibir los paquetes pero no los envia...///
+	}
+	else
+	{
+		/* En este caso el Firewall bloqueo la tarjeta de Red, pero el igual puede recibir los 
+		paquetes pero no los envia...*/
+		printf("\nFirewall Bloqueo el Envio y Recepcion de Datos...\n");	
 		system("sleep 2.0");
 		if((sem_getvalue(&TR->In, &Valor) == 0) AND (Valor == 0))
 		{
