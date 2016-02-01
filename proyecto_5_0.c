@@ -292,11 +292,29 @@ void Liberar_Buffer(int *Buffer) /* Parametro *Buffer */
 
 void Solicitar_Tarjeta_Red(Tarjeta_Red *TR)
 {
-	int Valor;
+	int Valor, i, Tam;
 
 	/* Si el firewall no esta bloqueado puedo recibir y enviar de una vez... */
 	if((sem_getvalue(&TR->Bloqueado, &Valor) == 0) AND (Valor == 1))	
 	{
+		//En caso de que el Firewall halla bloqueado el envio por medio de la Tarjeta de Red luego de ser desbloqueada 
+		//debe liberar los buffers...//
+		if(TR->Buffer_In > 0)	///En caso de que los Buffer esten llenos debe liberarlos...
+		{
+			Tam = TR->Buffer_In;
+			for(i = 0; i < Tam; i++)
+			{
+				Eliminar_Peticion_Buffer(&TR->Buffer_In);
+			}
+		}
+		if(TR->Buffer_Out > 0)	///En caso de que los Buffer esten llenos debe liberarlos...
+		{
+			Tam = TR->Buffer_Out;
+			for(i = 0; i < Tam; i++)
+			{
+				Eliminar_Peticion_Buffer(&TR->Buffer_In);
+			}
+		}
 		/* Si valor es igual 0, entonces esa es la señal de que es un paquete de entrada. */
 		if((sem_getvalue(&TR->In, &Valor) == 0) AND (Valor == 0))	
 		{
