@@ -24,6 +24,7 @@ Los modulos del 4 - 6 tienen prioridad 1 - 5
 #include <time.h>
 #include <semaphore.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* Define */
 #define N 10
@@ -33,8 +34,12 @@ Los modulos del 4 - 6 tienen prioridad 1 - 5
 #define OR ||
 #define FALSE 0
 #define TRUE 1
-#define SIZE_MEMORY 5000
+#define SIZE_MEMORY 500 /* 5000 */
 #define ERROR -1
+/* limite estimado de las veces que un proceso puede apoderarse del cpu */
+#define limit_tiempo_en_cola 7
+/* asumiendo que un proceso puede enviar como maximo dos paquetes a la tarjeta de red */
+#define limit_envio_tarjeta 2
 
 /* Declaracion de semaforos */
 sem_t mutex, sem_procesos[N], mutex2, mutexMemoryAccess;
@@ -64,7 +69,17 @@ typedef struct
 	int id_modulo;
 	tds *tdsProcess;
 	int estatus; /* 0 bloqueado, 1 listo, 2 en espera, 3 finalizado  */
+	int tiempo_cola;
 } PCB;
+
+typedef struct
+{
+	int capacidad;
+ 	int restante;
+ 	char mensaje[10];
+ 	sem_t mutex; /* verifica que solo se use la impresora 1 procmpor vez */
+}Impresora;
+
 
 int memory[SIZE_MEMORY];
 int bitmap[SIZE_MEMORY];
@@ -87,6 +102,12 @@ tds* allocate_memory(int request);
 void compact(); 
 /* quita un proceso de la memoria */
 void quitprocess(int id); 
+/* --------------------------------------------------------------- */
+void antivirus();
+/* --------------------------------------------------------------- */
+void recargar(Impresora *p);
+void imprimir(Impresora *p,char *sms , int tinta);
+
 
 /* --------------------------------------------------------------- */
 
@@ -95,7 +116,7 @@ int main(void)
 	/* Variables */
 	pthread_t procesos[N]; /* Cola para ejecucion */
 	int i, j = 0, x;
-
+		 
 	/* Semilla para el srand */
 	srand(time(NULL));
 
@@ -123,10 +144,22 @@ int main(void)
 	/* Se crean los procesos */
 	creador_procesos(procesos, pcb_procesos);
 	
-	/* Planificacion */
-	printf("\e[92m\e[1m AVISO: Presione [ENTER] para continuar ->");
-	getchar();
+	/* Vista de la memoria */
+	printf("\e[92m\e[1m");
+	printf("\nMemoria:\n");
+    for(i=0; i<SIZE_MEMORY; i++)
+        printf("%d ",memory[i]);
+    printf("\nMapa de bits:\n");
+    for(i=0; i<SIZE_MEMORY; i++)
+        printf("%d ",bitmap[i]);
+    printf("\n");
+    system("sleep 2.0");
 
+	/* Planificacion */
+	system("sleep 1.0");
+	printf("\e[92m\e[1m AVISO: Ejecucion de hilos en proceso\n");
+	system("sleep 3.0");
+	
 	/* Se ordenan por prioridad */
 	ordenamiento_por_prioridad(pcb_procesos);
 
@@ -139,13 +172,6 @@ int main(void)
 		j++;
 	}
 
-	/* Quitando de memoria los procesos finalizados */
-	for (j = 0; i < N; j++)
-	{
-		if(pcb_procesos[j].estatus = 3)
-			quitprocess(j);
-	}
-
 	printf("\e[0m");
 	return 0;
 }
@@ -154,13 +180,16 @@ int main(void)
 
 void *proceso_en_ejecucion(PCB *p)
 {
+	int i;
 	Tarjeta_Red TR;
+	Impresora printer;
 	
 	TR.Buffer_In = 0;
 	TR.Buffer_Out = 0;
 	sem_init(&TR.Bloqueado, 0, 1);
 	sem_init(&TR.In, 0, 1);
 	sem_init(&TR.Out, 0, 1);
+	sem_init(&printer.mutex, 0, 1); 
 	sem_wait(&TR.Bloqueado);
 	sem_wait(&TR.In);
 	sem_wait(&TR.Out);
@@ -171,7 +200,37 @@ void *proceso_en_ejecucion(PCB *p)
 		printf("\e[1m\e[94m AVISO: Entra al proceso %d para su ejecucion\n", p->numero_proceso);
 		printf("\e[93m\e[1m Prioridad del proceso %d es %d \n", p->numero_proceso, p->prioridad);
 		printf("\e[93m\e[1m ID del proceso %d es %d \n", p->numero_proceso, p->id_modulo);
+		printf("\e[1m\e[96m El proceso solicita la tarjeta de red\n");		
 		Solicitar_Tarjeta_Red(&TR);
+		pcb_procesos[p->numero_proceso].estatus = 3;
+	}
+	else if (p->id_modulo == 1)
+	{
+		printf("\e[1m\e[94m AVISO: Entra al proceso %d para su ejecucion\n", p->numero_proceso);
+		printf("\e[93m\e[1m Prioridad del proceso %d es %d \n", p->numero_proceso, p->prioridad);
+		printf("\e[93m\e[1m ID del proceso %d es %d \n", p->numero_proceso, p->id_modulo);
+		printf("\e[1m\e[96m Se ejecutara el servidor de impresion\n");
+		imprimir(&printer,"hola",20);
+		system("sleep 2.0");
+	}
+	else if(p->id_modulo == 2)
+	{
+		printf("\e[1m\e[94m AVISO: Entra al proceso %d para su ejecucion\n", p->numero_proceso);
+		printf("\e[93m\e[1m Prioridad del proceso %d es %d \n", p->numero_proceso, p->prioridad);
+		printf("\e[93m\e[1m ID del proceso %d es %d \n", p->numero_proceso, p->id_modulo);
+		printf("\e[1m\e[96m Se ejecutara el demonio de compactacion\n");		
+		compact();
+		/* Vista de la memoria despues de compactar*/
+		printf("\e[92m\e[1m");
+		printf("\nMemoria:\n");
+	    for(i=0; i<SIZE_MEMORY; i++)
+	        printf("%d ",memory[i]);
+	    printf("\nMapa de bits:\n");
+	    for(i=0; i<SIZE_MEMORY; i++)
+	        printf("%d ",bitmap[i]);
+	    printf("\n");
+    
+		system("sleep 2.0");
 		pcb_procesos[p->numero_proceso].estatus = 3;
 	}
 	else
@@ -179,7 +238,7 @@ void *proceso_en_ejecucion(PCB *p)
 		printf("\e[1m\e[94m AVISO: Entra al proceso %d para su ejecucion\n", p->numero_proceso);
 		printf("\e[93m\e[1m Prioridad del proceso %d es %d \n", p->numero_proceso, p->prioridad);
 		printf("\e[93m\e[1m ID del proceso %d es %d \n", p->numero_proceso, p->id_modulo);
-		system("sleep 3.0");
+		system("sleep 2.0");
 		pcb_procesos[p->numero_proceso].estatus = 3;
 	}
 
@@ -292,11 +351,29 @@ void Liberar_Buffer(int *Buffer) /* Parametro *Buffer */
 
 void Solicitar_Tarjeta_Red(Tarjeta_Red *TR)
 {
-	int Valor;
+	int Valor, i, Tam;
 
 	/* Si el firewall no esta bloqueado puedo recibir y enviar de una vez... */
 	if((sem_getvalue(&TR->Bloqueado, &Valor) == 0) AND (Valor == 1))	
 	{
+		/* En caso de que el Firewall halla bloqueado el envio por medio de la Tarjeta 
+		de Red luego de ser desbloqueada debe liberar los buffers...*/
+		if(TR->Buffer_In > 0)/* En caso de que los Buffer esten llenos debe liberarlos.. */
+		{
+			Tam = TR->Buffer_In;
+			for(i = 0; i < Tam; i++)
+			{
+				Eliminar_Peticion_Buffer(&TR->Buffer_In);
+			}
+		}
+		if(TR->Buffer_Out > 0)/* En caso de que los Buffer esten llenos debe liberarlos... */
+		{
+			Tam = TR->Buffer_Out;
+			for(i = 0; i < Tam; i++)
+			{
+				Eliminar_Peticion_Buffer(&TR->Buffer_In);
+			}
+		}
 		/* Si valor es igual 0, entonces esa es la señal de que es un paquete de entrada. */
 		if((sem_getvalue(&TR->In, &Valor) == 0) AND (Valor == 0))	
 		{
@@ -433,14 +510,15 @@ void compact()
                     found=TRUE;
             }
 
-            if(j<=SIZE_MEMORY)//encontro el primer espacio ocupado
+            if(j<=SIZE_MEMORY)/* encontro el primer espacio ocupado */
             {
-                //buscar a que proceso le pertenece el espacio de memoria ocupado donde termina el agujero
+                /* buscar a que proceso le pertenece el espacio de memoria ocupado donde termina el agujero */
                 k=0;
                 found=FALSE;
                 while(!found && k<N)
                 {
-                    if(pcb_procesos[k].tdsProcess!=NULL) //si hay apuntador a una tds entonces esta en memoria el proceso
+                	/* si hay apuntador a una tds entonces esta en memoria el proceso */
+                    if(pcb_procesos[k].tdsProcess!=NULL) 
                     {
                         if(pcb_procesos[k].tdsProcess->base==j)
                             found=TRUE;
@@ -448,13 +526,13 @@ void compact()
                     k++;
                 }
                 k--;
-                if(k<N && found)//encontro el proceso que hay que mover
+                if(k<N && found) /* encontro el proceso que hay que mover */
                 {
-                    //mover proceso hacia el primer espacio de memoria vacio
-                        //cambio la tds del proceso
+                    /* mover proceso hacia el primer espacio de memoria vacio */
+                        /* cambio la tds del proceso */
                     pcb_procesos[k].tdsProcess->base=i;
-                    //pcb_procesos[k].tdsProcess->limit se mantiene igual
-                        //muevo el mapa de bits y la memoria
+                    /* pcb_procesos[k].tdsProcess->limit se mantiene igual */
+                        /* muevo el mapa de bits y la memoria */
                     for(l=i; l<j; l++)
                     {
                         bitmap[l]=memory[l]=1;
@@ -473,7 +551,7 @@ void compact()
     }
     while(!exitCompact);
 
-    sem_post(&mutexMemoryAccess);//levanta el semaforo
+    sem_post(&mutexMemoryAccess); /* levanta el semaforo */
 }
 
 void quitprocess(int id)
@@ -485,7 +563,7 @@ void quitprocess(int id)
 	band= i = FALSE;
 	if(id>=0 && id<N)
     {
-        //busco en el vector de pcb para encontrar la base y limite del proceso
+        /* busco en el vector de pcb para encontrar la base y limite del proceso */
         while(i<N && !band)
         {
             if(pcb_procesos[i].numero_proceso == id)
@@ -495,14 +573,14 @@ void quitprocess(int id)
         }
         if(i<N && band)
         {
-            //verificar estatus para comprovar si termino
+            /* verificar estatus para comprovar si termino */
             if(pcb_procesos[i].estatus ==1)
             {
-                //liberar la memoria de la tabla de segmentos y el mapa de bits
+                /* liberar la memoria de la tabla de segmentos y el mapa de bits */
                 fin= pcb_procesos[i].tdsProcess->limit+pcb_procesos[i].tdsProcess->base-1;
                 for(j = pcb_procesos[i].tdsProcess->base  ;j<=fin ;j++)
                     memory[j]=bitmap[j]=0;
-                //liberar la tabla de segmentos
+                /* liberar la tabla de segmentos */
                 pcb_procesos[i].tdsProcess->base=0;
                 pcb_procesos[i].tdsProcess->limit=0;
                 free(pcb_procesos[i].tdsProcess);
@@ -510,8 +588,58 @@ void quitprocess(int id)
             }
         }
         else
-            printf("\nno se encontro el proceso %d\n", id);//solo con fines demostrativos
+            printf("\n\e[1m\e[9ERROR: No se encontro el proceso %d\n", id);
     }
 
     sem_post(&mutexMemoryAccess);
+}
+
+/* -------------------------------------------------------------------------------------------------- */
+
+void antivirus()
+{
+	int i;
+
+	for(i=0; i< N; i++)
+	{
+		if(((pcb_procesos[i].estatus== 0)||(pcb_procesos[i].estatus== 1))&& (pcb_procesos[i].tiempo_cola> limit_tiempo_en_cola) )
+			quitprocess(i);
+	}
+}
+
+/* -------------------------------------------------------------------------------------------------- */
+
+void recargar(Impresora *p)
+{
+	p->restante = 150;
+}
+
+
+void imprimir(Impresora *p,char *sms , int tinta)
+{
+	int valor;
+ 
+	 if((sem_getvalue(&p->mutex, &valor) == 0) && (valor == 1))/* aca verifica la exclusion mutua */
+	 {
+	 	sem_wait(&p->mutex);
+	 
+		printf("\n Impresora recibe paquete de impresion");
+		system("sleep 2.0");
+		if (p->restante-tinta <0)
+		{
+		 	printf("\n[error]"); /* aca se llama a quien sea que se le deba avisar o se deja el sms pa que alguien vea */
+			strcpy(p->mensaje,"[error]");
+			printf("\n");
+		}
+		else
+		{
+			printf("\n se imprime mensaje: %s",sms);
+			system("sleep 1.0");
+			p->restante=p->restante-tinta;
+			strcpy(p->mensaje,"[ok]"); /* se almacena por si alguien pregunta */
+			printf("\n[ok]");
+			printf("\n");
+		}
+		sem_post(&p->mutex);
+	 }
 }
